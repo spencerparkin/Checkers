@@ -1,0 +1,8 @@
+{
+	"name" : "Checkers",
+	"version" : "0.0.1",
+	"dependencies" :
+	{
+		"jsdom" : "9.2.1"
+	}
+}
