@@ -16,7 +16,7 @@ var shared = require( './CheckersShared' );
 jsdom.defaultDocumentFeatures.FetchExternalResources = false;
 jsdom.defaultDocumentFeatures.ProcessExternalResources = false;
 
-var nextGameId = 0;
+var nextGameId = 1;
 var gamesWaiting = {};
 var gamesPlaying = {};
 
@@ -44,12 +44,12 @@ var ServerCallback = function( request, result )
 			{
 				var listHtml = '<p>Following is a list of players waiting for an opponent.</p>\n';
 
-				listHtml += '<ol>\n';
+				listHtml += '<ul>\n';
 
 				for( var gameId in gamesWaiting )
 					listHtml += '\t<li><span class="joingGame"><a id="' + gameId.toString() + '" href="">Game ' + gameId.toString() + '</a></span></li>\n';
 
-				listHtml += '</ol>\n';
+				listHtml += '</ul>\n';
 
 				waitingListElement.innerHTML = listHtml;
 			}
@@ -62,11 +62,44 @@ var ServerCallback = function( request, result )
 
 		jsdom.env( htmlPage, [ 'http://code.jquery.com/jquery.js' ], JsdomCallback );
 	}
-	else if( /checkersclient/i.exec( request.url ) )
+	else if( /checkersclientlobby/i.exec( request.url ) )
 	{
-		var clientSource = fs.readFileSync( 'CheckersClient.js', 'utf8' );
+		var clientSource = fs.readFileSync( 'CheckersClientLobby.js', 'utf8' );
 		result.writeHead( 200, { 'Content-Type' : 'text/plain' } );
 		result.end( clientSource );
+	}
+	else if( /checkersclientgame/i.exec( request.url ) )
+	{
+		var clientSource = fs.readFileSync( 'CheckersClientGame.js', 'utf8' );
+		result.writeHead( 200, { 'Content-Type' : 'text/plain' } );
+		result.end( clientSource );
+	}
+	else if( /checkersshared/i.exec( request.url ) )
+	{
+		var sharedSource = fs.readFileSync( 'CheckersShared.js', 'utf8' );
+		result.writeHead( 200, { 'Content-Type' : 'text/plain' } );
+		result.end( sharedSource );
+	}
+	else if( urlData.pathname === '/NewGame.json' )
+	{
+		var gameId = nextGameId++;
+		var jsonData = JSON.stringify( { 'gameId' : gameId, 'color' : 'black' } );
+		
+		gamesWaiting[ gameId ] = new shared.CheckersGame();
+		
+		result.writeHead( 200, { 'Content-Type' : 'text/json' } );
+		result.end( jsonData );
+	}
+	else if( urlData.pathname === '/JoinGame.json' )
+	{
+		// ...use request data to know which game they want to join...
+	}
+	else if( urlData.pathname === '/game' )
+	{
+		var htmlPage = fs.readFileSync( 'CheckersGame.html', 'utf8' );
+		
+		result.writeHead( 200, { 'Content-type' : 'text/html' } );
+		result.end( htmlPage );
 	}
 	else
 	{

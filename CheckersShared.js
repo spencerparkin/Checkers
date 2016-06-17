@@ -150,8 +150,12 @@ CheckersGame.prototype.TakeTurn = function( source, target )
  * When being used server-side, we're exposed as a module.
  * When used client-side, we can ignore this.
  */
-module.exports =
+var typeofModule = typeof( module );
+if( typeofModule !== 'undefined' )
 {
-	'CheckersGame' : CheckersGame,
-	'OpponentOf' : OpponentOf
-};
+	module.exports =
+	{
+		'CheckersGame' : CheckersGame,
+		'OpponentOf' : OpponentOf
+	};
+}
