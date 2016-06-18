@@ -24,26 +24,54 @@ var OnStartNewGameClicked = function( event )
 		else
 		{
 			alert( 'Failed to request new checkers game.' );
+			window.location.reload();
 		}
 		
 		window.sessionStorage.newGameRequestInProgress = false;
 	}
 	
-	$.getJSON( "NewGame.json", JsonRequestCallback );
+	$.getJSON( 'NewGame.json', JsonRequestCallback );
 	
 	return false;
 }
 
 var OnJoinGameClicked = function( event )
 {
+	if( window.sessionStorage.gameId && window.sessionStorage.gameId > 0 )
+	{
+		alert( 'You have already joined/started a game.' );
+		window.location.replace( '/game' );
+		return false;
+	}
+	
+	if( window.sessionStorage.joinGameRequestInProgress )
+		return false;
+	
 	window.sessionStorage.joinGameRequestInProgress = true;
 	
-	var gameId; // use jquery to get gameId in hyperlink.
+	var gameId = parseInt( event.target.id );
 	
-	// TODO: Get id of event.target as gameId, make ajax request to join that game, keep gameId if joined, then redirect to game page.
-	// if fail, refresh current page; someone else may have accepted before us.
-	//var $( event.target ).text();
-	//corner-case: can't join own game we started...but we'll be on a different page, but account for it anyway.
+	var JsonRequestCallback = function( jsonData )
+	{
+		if( jsonData.join )
+		{
+			window.sessionStorage.gameId = gameId;
+			window.sessionStorage.color = jsonData.color;
+			window.sessionStorage.gameState = new CheckersGame();
+			window.location.replace( '/game' );
+		}
+		else
+		{
+			alert( 'Failed to join existing checkers game.' );
+			window.location.reload();
+		}
+		
+		window.sessionStorage.newGameRequestInProgress = false;
+	}
+	
+	$.getJSON( 'JoinGame.json', 'gameId=' + gameId, JsonRequestCallback );
+	
+	return false;
 }
 
 var OnDocumentReady = function()

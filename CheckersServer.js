@@ -25,86 +25,114 @@ var gamesPlaying = {};
  */
 var ServerCallback = function( request, result )
 {
-	var urlData = url.parse( request.url );
-
-	if( urlData.pathname === '/' )
+	try
 	{
-		var htmlPage = fs.readFileSync( 'CheckersLobby.html', 'utf8' );
+		var urlData = url.parse( request.url );
 
-		var JsdomCallback = function( errors, window )
+		if( urlData.pathname === '/' )
 		{
-			var $ = window.$;
-			var document = window.document;
+			var htmlPage = fs.readFileSync( 'CheckersLobby.html', 'utf8' );
 
-			var waitingListElement = document.getElementById( 'waitingList' );
-
-			if( Object.keys( gamesWaiting ).length === 0 )
-				waitingListElement.innerHTML = '<p>There are currently no players waiting for an opponent.</p>';
-			else
+			var JsdomCallback = function( errors, window )
 			{
-				var listHtml = '<p>Following is a list of players waiting for an opponent.</p>\n';
+				var $ = window.$;
+				var document = window.document;
 
-				listHtml += '<ul>\n';
+				var waitingListElement = document.getElementById( 'waitingList' );
 
-				for( var gameId in gamesWaiting )
-					listHtml += '\t<li><span class="joingGame"><a id="' + gameId.toString() + '" href="">Game ' + gameId.toString() + '</a></span></li>\n';
+				if( Object.keys( gamesWaiting ).length === 0 )
+					waitingListElement.innerHTML = '<p>There are currently no players waiting for an opponent.</p>';
+				else
+				{
+					var listHtml = '<p>Following is a list of games with players waiting for an opponent.</p>\n';
 
-				listHtml += '</ul>\n';
+					listHtml += '<ul>\n';
 
-				waitingListElement.innerHTML = listHtml;
+					for( var gameId in gamesWaiting )
+						listHtml += '\t<li><span class="joinGame"><a id="' + gameId.toString() + '" href="">Game ' + gameId.toString() + '</a></span></li>\n';
+
+					listHtml += '</ul>\n';
+
+					waitingListElement.innerHTML = listHtml;
+				}
+
+				htmlPage = window.document.documentElement.outerHTML;
+
+				result.writeHead( 200, { 'Content-type' : 'text/html' } );
+				result.end( htmlPage );
 			}
 
-			htmlPage = window.document.documentElement.outerHTML;
-
+			jsdom.env( htmlPage, [ 'http://code.jquery.com/jquery.js' ], JsdomCallback );
+		}
+		else if( /checkersclientlobby/i.exec( request.url ) )
+		{
+			var clientSource = fs.readFileSync( 'CheckersClientLobby.js', 'utf8' );
+			result.writeHead( 200, { 'Content-Type' : 'text/plain' } );
+			result.end( clientSource );
+		}
+		else if( /checkersclientgame/i.exec( request.url ) )
+		{
+			var clientSource = fs.readFileSync( 'CheckersClientGame.js', 'utf8' );
+			result.writeHead( 200, { 'Content-Type' : 'text/plain' } );
+			result.end( clientSource );
+		}
+		else if( /checkersshared/i.exec( request.url ) )
+		{
+			var sharedSource = fs.readFileSync( 'CheckersShared.js', 'utf8' );
+			result.writeHead( 200, { 'Content-Type' : 'text/plain' } );
+			result.end( sharedSource );
+		}
+		else if( urlData.pathname === '/NewGame.json' )
+		{
+			var gameId = nextGameId++;
+			var jsonData = JSON.stringify( { 'gameId' : gameId, 'color' : 'black' } );
+			
+			gamesWaiting[ gameId ] = new shared.CheckersGame();
+			
+			result.writeHead( 200, { 'Content-Type' : 'text/json' } );
+			result.end( jsonData );
+		}
+		else if( urlData.pathname === '/JoinGame.json' )
+		{
+			var capture = /^gameId=([0-9]+)/.exec( urlData.query );
+			if( capture.length !== 2 )
+				throw 'Failed to parse query data on URL string.';
+			
+			var gameId = parseInt( capture[1] );
+			var jsonObject =
+			{
+				'gameId' : gameId,
+				'join' : ( gameId in gamesWaiting ),
+				'color' : 'red'
+			};
+			
+			if( jsonObject.join === true )
+			{
+				gamesPlaying[ gameId ] = gamesWaiting[ gameId ];
+				delete gamesWaiting[ gameId ];
+			}
+			
+			var jsonData = JSON.stringify( jsonObject );
+			
+			result.writeHead( 200, { 'Content-Type' : 'text/json' } );
+			result.end( jsonData );
+		}
+		else if( urlData.pathname === '/game' )
+		{
+			var htmlPage = fs.readFileSync( 'CheckersGame.html', 'utf8' );
+			
 			result.writeHead( 200, { 'Content-type' : 'text/html' } );
 			result.end( htmlPage );
 		}
-
-		jsdom.env( htmlPage, [ 'http://code.jquery.com/jquery.js' ], JsdomCallback );
+		else
+		{
+			throw 'Unknown request.';
+		}
 	}
-	else if( /checkersclientlobby/i.exec( request.url ) )
-	{
-		var clientSource = fs.readFileSync( 'CheckersClientLobby.js', 'utf8' );
-		result.writeHead( 200, { 'Content-Type' : 'text/plain' } );
-		result.end( clientSource );
-	}
-	else if( /checkersclientgame/i.exec( request.url ) )
-	{
-		var clientSource = fs.readFileSync( 'CheckersClientGame.js', 'utf8' );
-		result.writeHead( 200, { 'Content-Type' : 'text/plain' } );
-		result.end( clientSource );
-	}
-	else if( /checkersshared/i.exec( request.url ) )
-	{
-		var sharedSource = fs.readFileSync( 'CheckersShared.js', 'utf8' );
-		result.writeHead( 200, { 'Content-Type' : 'text/plain' } );
-		result.end( sharedSource );
-	}
-	else if( urlData.pathname === '/NewGame.json' )
-	{
-		var gameId = nextGameId++;
-		var jsonData = JSON.stringify( { 'gameId' : gameId, 'color' : 'black' } );
-		
-		gamesWaiting[ gameId ] = new shared.CheckersGame();
-		
-		result.writeHead( 200, { 'Content-Type' : 'text/json' } );
-		result.end( jsonData );
-	}
-	else if( urlData.pathname === '/JoinGame.json' )
-	{
-		// ...use request data to know which game they want to join...
-	}
-	else if( urlData.pathname === '/game' )
-	{
-		var htmlPage = fs.readFileSync( 'CheckersGame.html', 'utf8' );
-		
-		result.writeHead( 200, { 'Content-type' : 'text/html' } );
-		result.end( htmlPage );
-	}
-	else
+	catch( error )
 	{
 		result.writeHead( 404, { 'Content-Type' : 'text/plain' } );
-		result.end( 'Page not found!\n' );
+		result.end( 'Error: ' + error.toString() );
 	}
 }
 
