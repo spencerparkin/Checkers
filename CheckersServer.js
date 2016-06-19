@@ -124,6 +124,14 @@ var ServerCallback = function( request, result )
 			result.writeHead( 200, { 'Content-type' : 'text/html' } );
 			result.end( htmlPage );
 		}
+		else if( /\.png/.exec( request.url ) )
+		{
+			var pngFile = urlData.pathname.substring( 1, urlData.pathname.length );
+			var pngFileData = fs.readFileSync( pngFile, 'binary' );
+			
+			result.writeHead( 200, { 'Content-Type' : 'image/png' } );
+			result.end( pngFileData, 'binary' );
+		}
 		else
 		{
 			throw 'Unknown request.';

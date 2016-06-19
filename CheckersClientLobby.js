@@ -18,7 +18,7 @@ var OnStartNewGameClicked = function( event )
 		{
 			window.sessionStorage.gameId = jsonData.gameId;
 			window.sessionStorage.color = jsonData.color;
-			window.sessionStorage.gameState = new CheckersGame();
+			window.sessionStorage.gameState = new CheckersGame();	// BUG: This is setting gameState to a string "[object Object]".
 			window.location.replace( '/game' );
 		}
 		else

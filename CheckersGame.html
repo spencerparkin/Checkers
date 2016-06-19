@@ -7,10 +7,41 @@
 	<script src="http://code.jquery.com/jquery.js"></script>
 	<script src="CheckersShared.js"></script>
 	<script src="CheckersClientGame.js"></script>
+	<script id="boardVertexShader" type="x-shader/x-vertex">
+		attribute vec2 vertex;
+		attribute vec2 texCoord;
+		uniform int row;
+		uniform int col;
+		varying vec2 frag_texCoord;
+		void main()
+		{
+			vec2 scaled_vertex = vertex / 10.0;
+			scaled_vertex += vec2( -9.0 / 10.0, 9.0 / 10.0 );
+			scaled_vertex += vec2( float( col ) * ( 2.0 / 10.0 ), -float( row ) * ( 2.0 / 10.0 ) );
+			gl_Position = vec4( scaled_vertex, 0, 1 );
+			frag_texCoord = texCoord;
+		}
+	</script>
+	<script id="boardFragmentShader" type="x-shader/x-fragment">
+		precision mediump float;
+		varying vec2 frag_texCoord;
+		uniform sampler2D texSampler;
+		void main()
+		{
+			gl_FragColor = texture2D( texSampler, vec2( frag_texCoord.s, frag_texCoord.t ) );
+		}
+	</script>
 </head>
 <body>
 
 	<h1>Checkers Game</h1>
+	
+	<p>
+		<canvas id="canvas" width="512" height="512" style="border:1px solid #000000;">
+		</canvas>
+	</p>
+	
+	<input type="button" value="Debug" onclick="OnBodyLoad()">
 
 </body>
 

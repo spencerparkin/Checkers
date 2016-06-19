@@ -64,79 +64,11 @@ function CheckersGame()
 /*
  * A method for changing the board state according to the legal moves of the game.
  */
-CheckersGame.prototype.TakeTurn = function( source, target )
+CheckersGame.prototype.TakeTurn = function( moveSequence )
 {
 	try
 	{
-		var sourceBoardElement = this.boardMatrix[ source.row ][ source.col ];
-		var sourceOccupant = sourceBoardElement.occupant;
-		
-		if( !sourceOccupant )
-			throw 'No source occupant found.';
-		
-		if( sourceOccupant.color !== this.whosTurn )
-			throw 'It is not ' + sourceOccupant.color + '\'s turn yet.';
-		
-		var targetBoardElement = this.boardMatrix[ target.row ][ target.col ];
-		var targetOccupant = targetBoardElement.occupant;
-		
-		if( targetOccupant )
-			throw 'Cannot move into occupied board location.';
-		
-		if( sourceOccupant.type === 'man' )
-		{
-			if( ( sourceOccupant.color === 'black' && sourceBoardElement.row > targetBoardElement.row ) ||
-				( sourceOccupant.color === 'red' && sourceBoardElement.row < targetBoardElement.row ) )
-			{
-				throw 'Only kings may move backwards.';
-			}
-		}
-		
-		var rowDelta = targetBoardElement.row - sourceBoardElement.row;
-		var colDelta = targetBoardElement.col - sourceBoardElement.col;
-		
-		if( Math.abs( rowDelta ) != Math.abs( colDelta ) )
-			throw 'You can only move diagonally.';
-		
-		if( Math.abs( rowDelta ) > 2 )
-			throw 'You cannot move that far.';
-		
-		var jumpedBoardElement = null;
-		var jumpedOccupant = null;
-		
-		if( Math.abs( rowDelta ) === 2 )
-		{
-			jumpedBoardElement = this.boardMatrix[ sourceBoardElement.row + rowDelta / 2 ][ sourceBoardElement.col + colDelta / 2 ];
-			jumpedOccupant = jumpedBoardElement.occupant;
-			
-			if( !jumpedOccupant )
-				throw 'You can\'t move that far unless you jump an opponent.';
-			
-			if( jumpedOccupant.color !== OpponentOf( sourceOccupant.color ) )
-				throw 'You can only jump an opponent.';
-		}
-		
-		// At last, we have determined that we can make the move.  Make it!
-		
-		sourceBoardElement.occupant = null;
-		targetBoardElement.occupant = sourceOccupant;
-		
-		if( jumpedOccupant )
-		{
-			this.captures[ jumpedOccupant.color ]++;
-			jumpedBoardElement.occupant = null;
-		}
-		
-		if( sourceOccupant.type === 'man' )
-		{
-			if( ( sourceOccupant.color === 'black' && targetBoardElement.row === checkerBoardRows - 1 ) ||
-				( sourceOccupant.color === 'red' && targetBoardElement.row === 0 ) )
-			{
-				sourceOccupant.type = 'king';
-			}
-		}
-		
-		this.whosTurn = OpponentOf( this.whosTurn );
+		// TODO: Rewrite this in terms of the given moveSequence.
 	}
 	catch( error )
 	{
