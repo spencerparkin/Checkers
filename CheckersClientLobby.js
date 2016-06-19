@@ -82,6 +82,13 @@ var OnJoinGameClicked = function( event )
 
 var OnDocumentReady = function()
 {
+	var gameId = window.sessionStorage.gameId;
+	if( window.sessionStorage.gameId && window.sessionStorage.gameId > 0 )
+	{
+		window.location.replace( '/game' );
+		return;
+	}
+	
 	$( '#startNewGame a' ).click( OnStartNewGameClicked );
 	$( '.joinGame a' ).click( OnJoinGameClicked );
 }

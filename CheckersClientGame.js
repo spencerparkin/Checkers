@@ -61,7 +61,7 @@ function LoadTexture( textureObject )
 		
 		// This is super lame, but it appears to be the standard way of doing things in JavaScript land (not surprisingly.)
 		// If we were doing ajax calls to get the texture data, then we could replace this hack with the 'Promises' technique of ES6.
-		if( ++textureLoadCount >= 6 )
+		if( ++textureLoadCount >= 7 )
 		{
 			// All textures have loaded, we can now render.
 			RenderCheckerBoard();
@@ -80,6 +80,8 @@ var boardRedManPieceTextureObject = { 'source' : 'RedManPiece.png' };
 var boardRedKingPieceTextureObject = { 'source' : 'RedKingPiece.png' };
 var boardBlackManPieceTextureObject = { 'source' : 'BlackManPiece.png' };
 var boardBlackKingPieceTextureObject = { 'source' : 'BlackKingPiece.png' };
+var boardSelectedTextureObject = { 'source' : 'Selected.png' };
+var boardSelectionSequence = null;
 
 function RenderBoardQuad( row, col, textureObject )
 {
@@ -202,9 +204,54 @@ function RenderCheckerBoard()
 			}
 		}
 	}
+	
+	if( boardSelectionSequence )
+	{
+		// TODO: It might be nice if we rendered the numbers of the sequence.
+		for( var i = 0; i < boardSelectionSequence.length; i++ )
+		{
+			var boardLocation = boardSelectionSequence[i];
+			
+			RenderBoardQuad( boardLocation.row, boardLocation.col, boardSelectedTextureObject );
+		}
+	}
 }
 
-var OnBodyLoad = function()
+var OnCanvasClicked = function( event )
+{
+	var canvas = document.getElementById( "canvas" );
+	
+	var boardLocation =
+	{
+		'row' : Math.floor( ( event.offsetY / canvas.height ) * 10.0 ),
+		'col' : Math.floor( ( event.offsetX / canvas.width ) * 10.0 )
+	};
+	
+	// Only allow selection of the black tiles.
+	if( ( boardLocation.row + boardLocation.col ) % 2 == 0 )
+		return;
+	
+	if( !boardSelectionSequence )
+		boardSelectionSequence = [];
+	
+	boardSelectionSequence.push( boardLocation );
+	
+	RenderCheckerBoard();
+}
+
+var OnClearSelection = function()
+{
+	boardSelectionSequence = undefined;
+	
+	RenderCheckerBoard();
+}
+
+var OnTakeTurn = function()
+{
+	alert( 'Not yet implemented!' );
+}
+
+var OnDocumentReady = function()
 {
 	try
 	{
@@ -229,15 +276,20 @@ var OnBodyLoad = function()
 		LoadTexture( boardRedKingPieceTextureObject );
 		LoadTexture( boardBlackManPieceTextureObject );
 		LoadTexture( boardBlackKingPieceTextureObject );
+		LoadTexture( boardSelectedTextureObject );
 		
 		gl.viewport( 0, 0, canvas.width, canvas.height );
 		gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 		gl.disable( gl.DEPTH_TEST );
 		gl.enable( gl.BLEND );
 		gl.blendFunc( gl.SRC_ALPHA, gl.ONE );
+		
+		$( "#canvas" ).click( OnCanvasClicked );
 	}
 	catch( error )
 	{
 		alert( 'Error: ' + error.toString() );
 	}
 }
+
+$( document ).ready( OnDocumentReady );
