@@ -159,7 +159,8 @@ function RenderCheckerBoard()
 	
 	gl.clear( gl.COLOR_BUFFER_BIT );
 	
-	var gameState = window.sessionStorage.gameState;
+	// We're not concerned with any real-time animation, so this is okay.
+	var gameState = JSON.parse( window.sessionStorage.gameState );
 	if( !gameState )
 		return;
 	
@@ -168,13 +169,37 @@ function RenderCheckerBoard()
 		for( var col = 0; col < checkerBoardCols; col++ )
 		{
 			var textureObject = null;
-			//var boardElement = gameState.boardMatrix[ row ][ col ];
-			//if( boardElement.color == 'white' )
+			var boardElement = gameState.boardMatrix[ row ][ col ];
+			if( boardElement.color == 'white' )
 				textureObject = boardWhiteTileTextureObject;
-			//else if( boardElement.color == 'black' )
-			//	textureObject = boardBlackTileTextureObject;
+			else if( boardElement.color == 'black' )
+				textureObject = boardBlackTileTextureObject;
 			
-			RenderBoardQuad( row, col, textureObject );
+			if( textureObject )
+				RenderBoardQuad( row, col, textureObject );
+			
+			if( boardElement.occupant )
+			{
+				textureObject = null;
+				
+				if( boardElement.occupant.color === 'black' )
+				{
+					if( boardElement.occupant.type === 'man' )
+						textureObject = boardBlackManPieceTextureObject;
+					else if( boardElement.occupant.type === 'king' )
+						textureObject = boardBlackKingPieceTextureObject;
+				}
+				else if( boardElement.occupant.color === 'red' )
+				{
+					if( boardElement.occupant.type === 'man' )
+						textureObject = boardRedManPieceTextureObject;
+					else if( boardElement.occupant.type === 'king' )
+						textureObject = boardRedKingPieceTextureObject;
+				}
+				
+				if( textureObject )
+					RenderBoardQuad( row, col, textureObject );
+			}
 		}
 	}
 }
@@ -208,7 +233,8 @@ var OnBodyLoad = function()
 		gl.viewport( 0, 0, canvas.width, canvas.height );
 		gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 		gl.disable( gl.DEPTH_TEST );
-		// TODO: Enable alpha-blending.
+		gl.enable( gl.BLEND );
+		gl.blendFunc( gl.SRC_ALPHA, gl.ONE );
 	}
 	catch( error )
 	{

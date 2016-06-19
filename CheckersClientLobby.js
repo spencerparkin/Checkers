@@ -16,9 +16,13 @@ var OnStartNewGameClicked = function( event )
 	{
 		if( jsonData.gameId )
 		{
+			// Note that sadly we can't store an object in session storage without seralizing it to a string.
+			// The deserialization process may not preserve the methods we have defined on the object either.
+			var gameState = new CheckersGame();
+			
 			window.sessionStorage.gameId = jsonData.gameId;
 			window.sessionStorage.color = jsonData.color;
-			window.sessionStorage.gameState = new CheckersGame();	// BUG: This is setting gameState to a string "[object Object]".
+			window.sessionStorage.gameState = JSON.stringify( gameState );
 			window.location.replace( '/game' );
 		}
 		else
@@ -55,9 +59,11 @@ var OnJoinGameClicked = function( event )
 	{
 		if( jsonData.join )
 		{
+			var gameState = new CheckersGame();
+			
 			window.sessionStorage.gameId = gameId;
 			window.sessionStorage.color = jsonData.color;
-			window.sessionStorage.gameState = new CheckersGame();
+			window.sessionStorage.gameState = JSON.stringify( gameState );
 			window.location.replace( '/game' );
 		}
 		else

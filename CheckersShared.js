@@ -53,7 +53,8 @@ function CheckersGame()
 				else if( row > 5 )
 					occupant.color = 'red';
 				
-				boardElement.occupant = occupant;
+				if( occupant.color )
+					boardElement.occupant = occupant;
 			}
 			
 			this.boardMatrix[ row ][ col ] = boardElement;
