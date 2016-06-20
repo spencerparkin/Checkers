@@ -3,6 +3,7 @@
 	"version" : "0.0.1",
 	"dependencies" :
 	{
-		"jsdom" : "9.2.1"
+		"jsdom" : "9.2.1",
+		"socket.io" : "1.4.6"
 	}
 }
