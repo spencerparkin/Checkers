@@ -44,7 +44,7 @@ var ServerCallback = function( request, result )
 					waitingListElement.innerHTML = '<p>There are currently no players waiting for an opponent.</p>';
 				else
 				{
-					var listHtml = '<p>Following is a list of games with players waiting for an opponent.</p>\n';
+					var listHtml = '<p>Following is a list of games with players waiting for an opponent.  Click on the game you wish to join.</p>\n';
 
 					listHtml += '<ul>\n';
 

@@ -31,20 +31,41 @@
 			gl_FragColor = texture2D( texSampler, vec2( frag_texCoord.s, frag_texCoord.t ) );
 		}
 	</script>
+	<style type="text/css">
+		h1
+		{
+			font-family: monospace;
+		}
+		
+		p
+		{
+			font-family: monospace;
+		}
+		
+		#all
+		{
+			text-align: center;
+		}
+	</style>
 </head>
 <body>
 
-	<h1>Checkers Game</h1>
+	<div id="all">
 	
-	<p>
-		<canvas id="canvas" width="512" height="512" style="border:1px solid #000000;">
-		</canvas>
-	</p>
-	
-	<!-- We need to tell the player which color they are somewhere. -->
-	
-	<input type="button" value="Clear Selection" onclick="OnClearSelection()">
-	<input type="button" value="Take Turn!" onclick="OnTakeTurn()">
+		<h1>Checkers Game</h1>
+		
+		<p>
+			<canvas id="canvas" width="800" height="800" style="border:1px solid #000000;">
+				The canvas element is not supported by your browser.
+			</canvas>
+		</p>
+		
+		<div id="buttons">
+			<input type="button" value="Clear Selection" onclick="OnClearSelection()">
+			<input type="button" value="Take Turn!" onclick="OnTakeTurn()">
+		</div>
+		
+	</div>
 
 </body>
 

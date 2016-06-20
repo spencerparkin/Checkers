@@ -7,19 +7,52 @@
 	<script src="http://code.jquery.com/jquery.js"></script>
 	<script src="CheckersShared.js"></script>
 	<script src="CheckersClientLobby.js"></script>
+	<style type="text/css">
+		a
+		{
+			text-decoration: none;
+			color: red;
+		}
+	
+		#waitingList li
+		{
+			list-style-type: none;
+		}
+		
+		#waitingList a
+		{
+			font-family: monospace;
+		}
+		
+		#waitingList a:hover
+		{
+			background-color: #DDDDEE;
+		}
+		
+		h1, p
+		{
+			font-family: monospace;
+		}
+		
+		#all
+		{
+			text-align: center;
+		}
+	</style>
 </head>
 <body>
 
-	<h1>Checkers Lobby</h1>
+	<div id="all">
+		<h1>Checkers Lobby</h1>
 
-	<form>
-		<p><span id="startNewGame"><a href="">Start a new game</a></span> or join a player waiting for an opponent.</p>
-	</form>
+		<form>
+			<p><span id="startNewGame"><a href="">Start a new game</a></span> or join a player waiting for an opponent.</p>
+		</form>
 
-	<p>
 		<div id="waitingList">
 		</div>
-	</p>
+		
+	</div>
 
 </body>
 
