@@ -56,8 +56,8 @@ function LoadTexture( textureObject )
 		gl.bindTexture( gl.TEXTURE_2D, textureObject.texture );
 		//gl.pixelStorei( gl.UNPACK_ALIGNMENT, 1 );
 		gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureObject.image );		// Note: For security reasons, this only works when files are being served by a web-server.  I don't understand all the details.
-		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
+		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
 		
 		// This is super lame, but it appears to be the standard way of doing things in JavaScript land (not surprisingly.)
 		// If we were doing ajax calls to get the texture data, then we could replace this hack with the 'Promises' technique of ES6.
