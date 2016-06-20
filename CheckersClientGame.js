@@ -166,6 +166,8 @@ function RenderCheckerBoard()
 	if( !gameState )
 		return;
 	
+	UpdateStatusText( gameState );
+	
 	for( var row = 0; row < checkerBoardRows; row++ )
 	{
 		for( var col = 0; col < checkerBoardCols; col++ )
@@ -215,6 +217,25 @@ function RenderCheckerBoard()
 			RenderBoardQuad( boardLocation.row, boardLocation.col, boardSelectedTextureObject );
 		}
 	}
+}
+
+var UpdateStatusText = function( gameState )
+{
+	var statusTextElement = document.getElementById( 'statusText' );
+	
+	if( !gameState )
+		gameState = JSON.parse( window.sessionStorage.gameState );
+	
+	var color = window.sessionStorage.color;
+	
+	var statusText = 'You are color ' + color + '.';
+	
+	if( gameState.whosTurn === color )
+		statusText += '  It is your turn!';
+	else
+		statusText += '  It is not yet your turn!';
+	
+	statusTextElement.innerHTML = statusText;
 }
 
 var OnCanvasClicked = function( event )

@@ -64,6 +64,9 @@ function CheckersGame()
 
 /*
  * A method for changing the board state according to the legal moves of the game.
+ * A valid sequence accounts for legal direction and does not jump any location more
+ * than once.  Before ending a player's turn, he loses all pieces that didn't jump an
+ * opponent's piece that could have done so.
  */
 CheckersGame.prototype.TakeTurn = function( moveSequence )
 {
