@@ -69,10 +69,10 @@ function CheckersGame()
  */
 CheckersGame.prototype.Winner = function()
 {
-	if( this.captures[ 'red' ] == 15 )
+	if( this.captures[ 'red' ] == 20 )
 		return 'red';
 	
-	if( this.captures[ 'black' ] == 15 )
+	if( this.captures[ 'black' ] == 20 )
 		return 'black';
 	
 	return null;
