@@ -9,8 +9,6 @@ var OnStartNewGameClicked = function( event )
 {
 	event.preventDefault();
 	
-	console.log( 'Inside new game click event callback!!!' );
-	
 	if( window.sessionStorage.newGameRequestInProgress )
 		return false;
 	
@@ -95,7 +93,7 @@ var OnDocumentReady = function()
 		return;
 	}
 	
-	//$( '#startNewGame a' ).click( OnStartNewGameClicked );
+	$( '#startNewGame a' ).click( OnStartNewGameClicked );
 	$( '.joinGame a' ).click( OnJoinGameClicked );
 }
 
