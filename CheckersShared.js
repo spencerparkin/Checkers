@@ -6,8 +6,10 @@
 
 'use strict';
 
- var checkerBoardRows = 10;
- var checkerBoardCols = 10;
+var checkerBoardRows = 10;
+var checkerBoardCols = 10;
+ 
+// TODO: Provide an option to play against the computer?
  
 /*
  * Determine the given player's opponent.
@@ -63,6 +65,20 @@ function CheckersGame()
 }
 
 /*
+ * The winner captures all of his/her opponent's board pieces first.
+ */
+CheckersGame.prototype.Winner = function()
+{
+	if( this.captures[ 'red' ] == 15 )
+		return 'red';
+	
+	if( this.captures[ 'black' ] == 15 )
+		return 'black';
+	
+	return null;
+}
+
+/*
  * Tell us if the occupant at the given board element can jump an adjacent piece.
  */
 CheckersGame.prototype.BoardOccupantCanStrike = function( boardElement )
@@ -71,7 +87,7 @@ CheckersGame.prototype.BoardOccupantCanStrike = function( boardElement )
 	if( !boardOccupant )
 		return false;
 	
-	for( var rowDelta = -1; rowDelta <= 1; rowDelta += 2 )
+	for( var rowDelta = -2; rowDelta <= 2; rowDelta += 4 )
 	{
 		var rowLand = boardElement.row + rowDelta;
 		if( rowLand < 0 || rowLand >= checkerBoardRows )
@@ -86,10 +102,13 @@ CheckersGame.prototype.BoardOccupantCanStrike = function( boardElement )
 			}
 		}
 		
-		for( var colDelta = -1; colDelta <= 1; colDelta += 2 )
+		for( var colDelta = -2; colDelta <= 2; colDelta += 4 )
 		{
 			var colLand = boardElement.col + colDelta;
 			if( colLand < 0 || colLand >= checkerBoardCols )
+				continue;
+			
+			if( this.boardMatrix[ rowLand ][ colLand ].occupant )
 				continue;
 			
 			var jumpedRow = boardElement.row + rowDelta / 2;
@@ -227,6 +246,36 @@ CheckersGame.prototype.TakeTurn = function( moveSequence, execute )
 		if( !execute )
 			return 'SUCCESS';
 		
+		/*
+		 * The first thing we do is forfeit any piece, except the one moved, that we
+		 * didn't use that could have been used to jump one of our opponent's peices.
+		 * But I think we only do this if we didn't jump any pieces on our turn.
+		 */
+		
+		if( jumpedLocationSequence.length == 0 )
+		{
+			for( var row = 0; row < checkerBoardRows; row++ )
+			{
+				for( var col = 0; col < checkerBoardCols; col++ )
+				{
+					var boardElement = this.boardMatrix[ row ][ col ];
+					var boardOccupant = boardElement.occupant;
+					
+					if( boardOccupant && boardOccupant.color === this.whosTurn )
+					{
+						if( boardOccupant === sourceOccupant )
+							continue;
+						
+						if( this.BoardOccupantCanStrike( boardElement ) )
+						{
+							boardElement.occupant = null;
+							this.captures[ OpponentOf( this.whosTurn ) ]++;
+						}
+					}
+				}
+			}
+		}
+		
 		var targetBoardLocation = moveSequence[ moveSequence.length - 1 ];
 		var targetBoardElement = this.boardMatrix[ targetBoardLocation.row ][ targetBoardLocation.col ];
 		
@@ -244,29 +293,17 @@ CheckersGame.prototype.TakeTurn = function( moveSequence, execute )
 		}
 		
 		/*
-		 * The last thing we do is forfeit any piece we didn't use that could have
-		 * been used to jump a player's piece that now still resides on the board.
+		 * Men who reach the other side become kings.
 		 */
 		
-		/*
-		for( var row = 0; row < checkerBoardRows; row++ )
+		if( sourceOccupant.type === 'man' )
 		{
-			for( var col = 0; col < checkerBoardCols; col++ )
+			if( ( sourceOccupant.color === 'black' && targetBoardElement.row === checkerBoardRows - 1 ) ||
+				( sourceOccupant.color === 'red' && targetBoardElement.row === 0 ) )
 			{
-				var boardElement = this.boardMatrix[ row ][ col ];
-				var boardOccupant = boardElement.occupant;
-				
-				if( boardOccupant && boardOccupant.color === this.whosTurn )
-				{
-					if( this.BoardOccupantCanStrike( boardElement ) )
-					{
-						boardElement.occupant = null;
-						this.captures[ OpponentOf( this.whosTurn ) ]++;
-					}
-				}
+				sourceOccupant.type = 'king';
 			}
 		}
-		*/
 		
 		/*
 		 * Lastly, change who's turn it is.
@@ -283,6 +320,18 @@ CheckersGame.prototype.TakeTurn = function( moveSequence, execute )
 }
 
 /*
+ * This function is a lame hack necessitated by the inability to store a
+ * JavaScript object in the session storage space.  Only primitives are
+ * aloud, so the object must be serialized and then deserialized as a string.
+ * Consequently, methods are not preserved.  jStorage may be a solution,
+ * but for now, I'm going to work around the issue.
+ */
+var RestoreMethods = function( gameState )
+{
+	Object.setPrototypeOf( gameState, CheckersGame.prototype );
+}
+
+/*
  * When being used server-side, we're exposed as a module.
  * When used client-side, we can ignore this.
  */
@@ -292,6 +341,7 @@ if( typeofModule !== 'undefined' )
 	module.exports =
 	{
 		'CheckersGame' : CheckersGame,
-		'OpponentOf' : OpponentOf
+		'OpponentOf' : OpponentOf,
+		'RestoreMethods' : RestoreMethods
 	};
 }

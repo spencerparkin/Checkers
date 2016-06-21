@@ -330,22 +330,44 @@ var ConnectToServer = function( hostname, port )
 			{
 				var gameState = JSON.parse( window.sessionStorage.gameState );
 				
-				// TODO: Will we have to re-hook-up the methods of the class?
-				var result = gameState.TakeTurn( messageData.moveSequence );
+				RestoreMethods( gameState );
+				
+				var result = gameState.TakeTurn( messageData.moveSequence, true );
 				if( result !== 'SUCCESS' )
 				{
 					alert( 'Internal error!  Game state not synchronized!' );
 				}
 				
+				boardSelectionSequence = undefined;
+				
 				RenderCheckerBoard( gameState );
+				
+				window.sessionStorage.gameState = JSON.stringify( gameState );
 			}
 			else if( messageData.type === 'move rejected' )
 			{
 				alert( 'Move rejected: ' + messageData.reason );
+				
+				boardSelectionSequence = undefined;
+				
+				RenderCheckerBoard();
 			}
 			else if( messageData.type === 'error' )
 			{
 				alert( 'Error: ' + messageData.error );
+			}
+			else if( messageData.type === 'opponent disconnected' || messageData.type === 'game over' )
+			{
+				if( messageData.type === 'opponent disconnected' )
+					alert( 'Opponent disconnected!' );
+				else if( messageData.type === 'game over' )
+					alert( 'Game over!  Color ' + messageData.winner + ' wins!' );	
+				
+				delete window.sessionStorage.gameState;
+				delete window.sessionStorage.color;
+				delete window.sessionStorage.gameId;
+				
+				window.location.replace( '/' );
 			}
 		}
 

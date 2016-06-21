@@ -206,6 +206,12 @@ var OnSocketConnection = function( socket )
 			
 			var gameState = gamesPlaying[ messageData.gameId ];
 			
+			if( socket.color !== gameState.whosTurn )
+			{
+				socket.emit( 'message', { 'type' : 'move rejected', 'reason' : 'You cannot take your opponent\'s turn for them.' } );
+				return;
+			}
+			
 			var result = gameState.TakeTurn( messageData.moveSequence, false );
 			if( result !== 'SUCCESS' )
 			{
@@ -228,9 +234,18 @@ var OnSocketConnection = function( socket )
 				socket.emit( 'message', { 'type' : 'error', 'reason' : 'Internal error.' } );
 				return;
 			}
-				
-			socket.emit( 'message', { 'type' : 'execute move sequence', 'moveSequence' : messageData.moveSequence } );
-			opponentSocket.emit( 'message', { 'type' : 'execute move sequence', 'moveSequence' : messageData.moveSequence } );
+			
+			var messageData = { 'type' : 'execute move sequence', 'moveSequence' : messageData.moveSequence };
+			socket.emit( 'message', messageData );
+			opponentSocket.emit( 'message', messageData );
+			
+			var winner = gameState.Winner();
+			if( winner )
+			{
+				messageData = { 'type' : 'game over', 'winner' : winner };
+				socket.emit( 'message', messageData );
+				opponentSocket.emit( 'message', messageData );
+			}
 		}
 	}
 	
