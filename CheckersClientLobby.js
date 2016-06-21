@@ -89,7 +89,7 @@ var OnDocumentReady = function()
 		return;
 	}
 	
-	$( '#startNewGame a' ).click( OnStartNewGameClicked );
+	//$( '#startNewGame a' ).click( OnStartNewGameClicked );	// This doesn't work on Heroku.
 	$( '.joinGame a' ).click( OnJoinGameClicked );
 }
 
