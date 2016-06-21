@@ -109,7 +109,7 @@ CheckersGame.prototype.BoardOccupantCanStrike = function( boardElement )
 /*
  * A method for changing the board state according to the legal moves of the game.
  */
-CheckersGame.prototype.TakeTurn = function( moveSequence )
+CheckersGame.prototype.TakeTurn = function( moveSequence, execute )
 {
 	try
 	{
@@ -176,11 +176,8 @@ CheckersGame.prototype.TakeTurn = function( moveSequence )
 			if( Math.abs( rowDelta ) !== Math.abs( colDelta ) )
 				throw 'You can only move diagonally';
 			
-			if( Math.abs( rowDelta ) == 1 && moveSequence.length > 2 )
+			if( Math.abs( rowDelta ) === 1 && moveSequence.length > 2 )
 				throw 'Single-jump moves can only be done one turn at a time.';
-			
-			if( Math.abs( rowDelta ) !== 2 )
-				throw 'You cannot jump farther than a double-jump.';
 			
 			if( sourceOccupant.type === 'man' )
 			{
@@ -191,34 +188,44 @@ CheckersGame.prototype.TakeTurn = function( moveSequence )
 				}
 			}
 			
-			var jumpedBoardLocation = { 'row' : ( prevBoardLocation.row + rowDelta / 2 ), 'col' : ( prevBoardLocation.col + colDelta / 2 ) };
-			var jumpedBoardElement = this.boardMatrix[ jumpedBoardLocation.row ][ jumpedBoardLocation.col ];
-			var jumpedOccupant = jumpedBoardElement.occupant;
-				
-			if( !jumpedOccupant )
-				throw 'A double-jump can only be made over an opponent\'s piece, not over a vaccant board location.';
-				
-			if( jumpedOccupant.color !== OpponentOf( sourceOccupant.color ) )
-				throw 'You can only jump an opponent\'s game piece, not your own.';
-			
-			// This makes us O(n^2) when we could be O(n ln n), but a sequence should never be big enough for us to care.
-			for( var j = 0; j < jumpedLocationSequence.length; j++ )
+			if( Math.abs( rowDelta ) === 2 )
 			{
-				var alreadyJumpedBoardLocation = jumpedLocationSequence[j];
+				var jumpedBoardLocation = { 'row' : ( prevBoardLocation.row + rowDelta / 2 ), 'col' : ( prevBoardLocation.col + colDelta / 2 ) };
+				var jumpedBoardElement = this.boardMatrix[ jumpedBoardLocation.row ][ jumpedBoardLocation.col ];
+				var jumpedOccupant = jumpedBoardElement.occupant;
+					
+				if( !jumpedOccupant )
+					throw 'A double-jump can only be made over an opponent\'s piece, not over a vaccant board location.';
+					
+				if( jumpedOccupant.color !== OpponentOf( sourceOccupant.color ) )
+					throw 'You can only jump an opponent\'s game piece, not your own.';
 				
-				if( alreadyJumpedBoardLocation.row == jumpedBoardLocation.row &&
-					alreadyJumpedBoardLocation.col == jumpedBoardLocation.col )
+				// This makes us O(n^2) when we could be O(n ln n), but a sequence should never be big enough for us to care.
+				for( var j = 0; j < jumpedLocationSequence.length; j++ )
 				{
-					throw 'You cannot jump the same board location more than once.';
+					var alreadyJumpedBoardLocation = jumpedLocationSequence[j];
+					
+					if( alreadyJumpedBoardLocation.row === jumpedBoardLocation.row &&
+						alreadyJumpedBoardLocation.col === jumpedBoardLocation.col )
+					{
+						throw 'You cannot jump the same board location more than once.';
+					}
 				}
+				
+				jumpedLocationSequence.push( jumpedBoardLocation );
 			}
-			
-			jumpedLocationSequence.push( jumpedBoardLocation );
+			else if( Math.abs( rowDelta ) > 2 )
+			{
+				throw 'You cannot jump farther than a double-jump.';
+			}
 		}
 		
 		/*
 		 * At this point we have fully vetted the move and are ready to execute it.
 		 */
+		
+		if( !execute )
+			return 'SUCCESS';
 		
 		var targetBoardLocation = moveSequence[ moveSequence.length - 1 ];
 		var targetBoardElement = this.boardMatrix[ targetBoardLocation.row ][ targetBoardLocation.col ];
@@ -241,6 +248,7 @@ CheckersGame.prototype.TakeTurn = function( moveSequence )
 		 * been used to jump a player's piece that now still resides on the board.
 		 */
 		
+		/*
 		for( var row = 0; row < checkerBoardRows; row++ )
 		{
 			for( var col = 0; col < checkerBoardCols; col++ )
@@ -250,7 +258,7 @@ CheckersGame.prototype.TakeTurn = function( moveSequence )
 				
 				if( boardOccupant && boardOccupant.color === this.whosTurn )
 				{
-					if( BoardOccupantCanStrike( boardElement ) )
+					if( this.BoardOccupantCanStrike( boardElement ) )
 					{
 						boardElement.occupant = null;
 						this.captures[ OpponentOf( this.whosTurn ) ]++;
@@ -258,6 +266,7 @@ CheckersGame.prototype.TakeTurn = function( moveSequence )
 				}
 			}
 		}
+		*/
 		
 		/*
 		 * Lastly, change who's turn it is.

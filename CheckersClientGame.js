@@ -154,7 +154,7 @@ function RenderBoardQuad( row, col, textureObject )
 	gl.drawArrays( gl.TRIANGLES, 0, 6 );
 }
 
-function RenderCheckerBoard()
+function RenderCheckerBoard( gameState )
 {
 	if( !gl )
 		return;
@@ -162,7 +162,8 @@ function RenderCheckerBoard()
 	gl.clear( gl.COLOR_BUFFER_BIT );
 	
 	// We're not concerned with any real-time animation, so this is okay.
-	var gameState = JSON.parse( window.sessionStorage.gameState );
+	if( !gameState )
+		gameState = JSON.parse( window.sessionStorage.gameState );
 	if( !gameState )
 		return;
 	
@@ -267,11 +268,6 @@ var OnClearSelection = function()
 	RenderCheckerBoard();
 }
 
-var OnTakeTurn = function()
-{
-	alert( 'Not yet implemented!' );
-}
-
 var OnDocumentReady = function()
 {
 	try
@@ -305,7 +301,7 @@ var OnDocumentReady = function()
 		gl.enable( gl.BLEND );
 		gl.blendFunc( gl.SRC_ALPHA, gl.ONE );
 		
-		$( "#canvas" ).click( OnCanvasClicked );
+		$( '#canvas' ).click( OnCanvasClicked );
 	}
 	catch( error )
 	{
@@ -314,3 +310,60 @@ var OnDocumentReady = function()
 }
 
 $( document ).ready( OnDocumentReady );
+
+var ConnectToServer = function( hostname, port )
+{
+	var socket = io.connect( hostname + ':' + port );
+	
+	if( socket )
+	{
+		var OnSocketReceiveMessage = function( messageData )
+		{
+			if( messageData.type === 'identify yourself' )
+			{
+				var gameId = window.sessionStorage.gameId;
+				var color = window.sessionStorage.color;
+				
+				socket.emit( 'message', { 'type' : 'self identification', 'gameId' : gameId, 'color' : color } );
+			}
+			else if( messageData.type === 'execute move sequence' )
+			{
+				var gameState = JSON.parse( window.sessionStorage.gameState );
+				
+				// TODO: Will we have to re-hook-up the methods of the class?
+				var result = gameState.TakeTurn( messageData.moveSequence );
+				if( result !== 'SUCCESS' )
+				{
+					alert( 'Internal error!  Game state not synchronized!' );
+				}
+				
+				RenderCheckerBoard( gameState );
+			}
+			else if( messageData.type === 'move rejected' )
+			{
+				alert( 'Move rejected: ' + messageData.reason );
+			}
+			else if( messageData.type === 'error' )
+			{
+				alert( 'Error: ' + messageData.error );
+			}
+		}
+
+		socket.on( 'message', OnSocketReceiveMessage );
+	}
+	
+	return socket;
+}
+
+var socket = ConnectToServer( '127.0.0.1', 3000 );
+
+var OnTakeTurn = function()
+{
+	if( !boardSelectionSequence )
+		alert( 'You need to select 2 or more board locations first.' );
+	else
+	{
+		var gameId = window.sessionStorage.gameId;
+		socket.emit( 'message', { 'type' : 'take turn', 'moveSequence' : boardSelectionSequence, 'gameId' : gameId } );
+	}	
+}

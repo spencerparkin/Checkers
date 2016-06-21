@@ -10,6 +10,7 @@ var http = require( 'http' );
 var url = require( 'url' );
 var jsdom = require( 'jsdom' );
 var fs = require( 'fs' );
+var sockIO = require( 'socket.io' );
 var shared = require( './CheckersShared' );
 
 // When jsdom loads our HTML templates, try to have it ignore the <script> tags.  Is this necessary?
@@ -19,6 +20,7 @@ jsdom.defaultDocumentFeatures.ProcessExternalResources = false;
 var nextGameId = 1;
 var gamesWaiting = {};
 var gamesPlaying = {};
+var gameSockets = {};
 
 /*
  * This is where we serve requests from the browser client.
@@ -144,11 +146,107 @@ var ServerCallback = function( request, result )
 	}
 }
 
+var OnSocketConnection = function( socket )
+{
+	// Note that these closures don't appear to be given enough information, but the idea
+	// is that the information they need can be stored as up-values on the closure.
+	// For example, I'm not given here the socket that disconnected, but I can save it
+	// as part of the closure by referencing it here from the defining scope.
+	var OnSocketDisconnect = function()
+	{
+		var gameId = socket.gameId;
+		if( !gameId )
+			return;
+		
+		var socketPair = gameSockets[ gameId ];
+		if( !socketPair )
+			return;
+		
+		var opponentColor = shared.OpponentOf( socket.color );
+		var opponentSocket = socketPair[ opponentColor ];
+		if( opponentSocket )
+		{
+			// Tell the player that their opponent disconnected.
+			opponentSocket.emit( 'message', { 'type' : 'opponent disconnected' } );
+		}
+		
+		// The game is over.  We don't support any kind of reconnect mid-game.
+		delete socketPair[ socket.color ];
+		delete gamesPlaying[ gameId ];
+	}
+	
+	var OnSocketReceiveMessage = function( messageData )
+	{
+		if( messageData.type === 'self identification' )
+		{
+			// We can store our own properties on the socket object (or any object.)
+			socket.gameId = messageData.gameId;
+			socket.color = messageData.color;
+			
+			var socketPair = gameSockets[ messageData.gameId ];
+			if( !socketPair )
+				socketPair = {};
+			
+			if( socketPair[ messageData.color ] )
+			{
+				socket.emit( 'message', { 'type' : 'error', 'error' : 'Color ' + messageData.color + ' already connected.' } );
+				return;
+			}
+			
+			socketPair[ messageData.color ] = socket;
+			gameSockets[ messageData.gameId ] = socketPair;
+		}
+		else if( messageData.type === 'take turn' )
+		{
+			if( !( messageData.gameId in gamesPlaying ) )
+			{
+				socket.emit( 'message', { 'type' : 'error', 'error' : 'Game not found.' } );
+				return;
+			}
+			
+			var gameState = gamesPlaying[ messageData.gameId ];
+			
+			var result = gameState.TakeTurn( messageData.moveSequence, false );
+			if( result !== 'SUCCESS' )
+			{
+				socket.emit( 'message', { 'type' : 'move rejected', 'reason' : result } );
+				return;
+			}
+			
+			var opponentColor = shared.OpponentOf( socket.color );
+			var socketPair = gameSockets[ messageData.gameId ];
+			var opponentSocket = socketPair[ opponentColor ];
+			if( !opponentSocket )
+			{
+				socket.emit( 'message', { 'type' : 'error', 'reason' : 'Opponent not connected/identified.' } );
+				return;
+			}
+				
+			result = gameState.TakeTurn( messageData.moveSequence, true );
+			if( result !== 'SUCCESS' )
+			{
+				socket.emit( 'message', { 'type' : 'error', 'reason' : 'Internal error.' } );
+				return;
+			}
+				
+			socket.emit( 'message', { 'type' : 'execute move sequence', 'moveSequence' : messageData.moveSequence } );
+			opponentSocket.emit( 'message', { 'type' : 'execute move sequence', 'moveSequence' : messageData.moveSequence } );
+		}
+	}
+	
+	socket.on( 'message', OnSocketReceiveMessage );
+	socket.on( 'disconnect', OnSocketDisconnect );
+	socket.emit( 'message', { 'type' : 'identify yourself' } );
+}
+
 var server = http.createServer( ServerCallback );
 
 var hostname = '127.0.0.1';
 var port = 3000;
 
 server.listen( port, hostname );
+
+var io = sockIO.listen( server );
+io.sockets.on( 'connection', OnSocketConnection );
 
 console.log( 'Checkers server running on host ' + hostname + ':' + port );
