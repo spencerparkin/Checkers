@@ -31,6 +31,8 @@ var ServerCallback = function( request, result )
 	{
 		var urlData = url.parse( request.url );
 
+		console.log( 'Asked to server URL: ' + request.url );
+		
 		if( urlData.pathname === '/' )
 		{
 			var htmlPage = fs.readFileSync( 'CheckersLobby.html', 'utf8' );
@@ -88,8 +90,6 @@ var ServerCallback = function( request, result )
 		{
 			var gameId = nextGameId++;
 			var jsonData = JSON.stringify( { 'gameId' : gameId, 'color' : 'black' } );
-			
-			console.log( 'Server: New game response sending: ' + gameId );
 			
 			gamesWaiting[ gameId ] = new shared.CheckersGame();
 			
