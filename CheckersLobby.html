@@ -29,12 +29,12 @@
 			background-color: #DDDDEE;
 		}
 		
-		h1, p
+		h1, h2, p
 		{
 			font-family: monospace;
 		}
 		
-		#all
+		#lobbyPart
 		{
 			text-align: center;
 		}
@@ -42,15 +42,55 @@
 </head>
 <body>
 
-	<div id="all">
+	<div id="lobbyPart">
 		<h1>Checkers Lobby</h1>
 
 		<p><span id="startNewGame"><a href="">Start a new game</a></span> or join a player waiting for an opponent.</p>
 
 		<div id="waitingList">
 		</div>
-		
 	</div>
+	
+	<h2>Motivations/Impressions</h2>
+	<p>
+	This web-app was created as an exercise in learning JavaScript, Node.js, and various modules and frameworks
+	surrounding these technologies.  Completely new to web-app development, I'm not sure I always made the best
+	design decisions, and I'm not entirely confident the app would scale to many thousands of users; nevertheless,
+	I'm fairly happy with how it turned out, despite some of the JavaScript-style coding practices that feel more
+	like hacks to me than legitimate practices.  The UI/UX is far from perfect, but I will continue to improve it
+	over time.
+	</p>
+	<p>
+	Though I've come to find out that many are tired of opinions about Node.js, I can't help but add
+	my initial impressions here.  I was initially drawn to Node.js, because I found the idea of not needing
+	to learn yet another new language for server back-end programming an appealing prospect.  Having now
+	gone through the effort to create a somewhat substantial Node.js application, I'm fairly confident that
+	I would not want to implement and maintain a large and complex server-side system using nothing but
+	JavaScript.  There are a few reasons that don't consider efficency or scalability at all.
+	</p>
+	<p>First, I find the JavaScript language
+	to be quite querky.  It's fine for small client-side stuff, but I'm not excited about writing a large and complex
+	application with it, but maybe I just need to learn it better?
+	</p>
+	<p>Second, JavaScript-based APIs have taken
+	the asynchronous approach to an extreme.  Maybe we need this to get the best out of concurrency, but it's
+	not always obvious to me that a callback can return without immediately providing a result.
+	In cases where the poorly written API documentation can be understood, one is allowed to
+	defer the result to yet another asynchronously called callback -- a closure created with the needed up-values
+	taken from the original callback.  The callback chaining can get messy,
+	especially if you need to do something only after two or more callbacks have completed.  API docs are almost
+	never clear whether the result of a callback will be needed immediately after the callback is called.
+	If the result is computed on an object passed by reference, then it can, I believe, be safely assumed that
+	callback chaining is allowed and even encouraged for concurrency's sake.
+	</p>
+	<p>Lastly, I have to say that without
+	<a href="https://github.com/node-inspector/node-inspector">node-inspector</a>,
+	this project would have never succeeded.  As a developer, what's most important
+	to me about a language, and what makes coding in it enjoyable, are the debugging tools available for it.
+	Chrome's debugger is great, but I guess I've just been spoiled too much by the DevStudio IDE/Debugger which
+	has some features I've yet to find in Chrome.  I'm sure Chrome's debugger is just going to get better, though;
+	and I have yet to try fire-bug.
+	</p>
 
 </body>
 
