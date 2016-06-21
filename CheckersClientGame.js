@@ -313,9 +313,16 @@ $( document ).ready( OnDocumentReady );
 
 var ConnectToServer = function( hostname, port )
 {
-	var socket = io.connect( hostname + ':' + port );
+	// I'm not sure what this means, but this is how we do it on Heroku.
+	// Note that if I were ever to scale the app to multiple dynos, I would
+	// want to turn on "session affinity".  Otherwise, HTTP requests get sent
+	// to random dynos and that obviously wouldn't work with this app or any
+	// app that shows persistent server-side data.  (cmd> heroku features:enable http-session-affinity)
+	var socket = io(); //io.connect( hostname + ':' + port );
 	
-	if( socket )
+	if( !socket )
+		alert( 'Failed to connect socket to server!' );
+	else
 	{
 		var OnSocketReceiveMessage = function( messageData )
 		{
@@ -377,8 +384,7 @@ var ConnectToServer = function( hostname, port )
 	return socket;
 }
 
-// How will this work on Heroku?
-var socket = null; //ConnectToServer( '127.0.0.1', 3000 );
+var socket = ConnectToServer( '127.0.0.1', 3000 );
 
 var OnTakeTurn = function()
 {
