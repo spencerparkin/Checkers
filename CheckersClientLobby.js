@@ -9,6 +9,8 @@ var OnStartNewGameClicked = function( event )
 {
 	event.preventDefault();
 	
+	console.log( 'Inside new game click event callback!!!' );
+	
 	if( window.sessionStorage.newGameRequestInProgress )
 		return false;
 	
