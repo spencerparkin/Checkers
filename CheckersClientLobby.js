@@ -43,6 +43,8 @@ var OnStartNewGameClicked = function( event )
 
 var OnJoinGameClicked = function( event )
 {
+	event.preventDefault();
+	
 	if( window.sessionStorage.gameId && window.sessionStorage.gameId > 0 )
 	{
 		alert( 'You have already joined/started a game.' );
@@ -91,7 +93,7 @@ var OnDocumentReady = function()
 		return;
 	}
 	
-	//$( '#startNewGame a' ).click( OnStartNewGameClicked );	// This doesn't work on Heroku.
+	//$( '#startNewGame a' ).click( OnStartNewGameClicked );
 	$( '.joinGame a' ).click( OnJoinGameClicked );
 }
 
