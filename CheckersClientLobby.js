@@ -7,6 +7,8 @@
  // Note that we must return false here to prevent the default behavior of the hyper-link.
 var OnStartNewGameClicked = function( event )
 {
+	event.preventDefault();
+	
 	if( window.sessionStorage.newGameRequestInProgress )
 		return false;
 	
