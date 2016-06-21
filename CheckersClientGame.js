@@ -377,7 +377,8 @@ var ConnectToServer = function( hostname, port )
 	return socket;
 }
 
-var socket = ConnectToServer( '127.0.0.1', 3000 );
+// How will this work on Heroku?
+var socket = null; //ConnectToServer( '127.0.0.1', 3000 );
 
 var OnTakeTurn = function()
 {

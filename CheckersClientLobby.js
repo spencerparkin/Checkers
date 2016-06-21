@@ -16,6 +16,8 @@ var OnStartNewGameClicked = function( event )
 	{
 		if( jsonData.gameId )
 		{
+			console.log( 'Client: New game response got: ' + jsonData.gameId );
+			
 			// Note that sadly we can't store an object in session storage without seralizing it to a string.
 			// The deserialization process may not preserve the methods we have defined on the object either.
 			var gameState = new CheckersGame();

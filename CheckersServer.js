@@ -89,6 +89,8 @@ var ServerCallback = function( request, result )
 			var gameId = nextGameId++;
 			var jsonData = JSON.stringify( { 'gameId' : gameId, 'color' : 'black' } );
 			
+			console.log( 'Server: New game response sending: ' + gameId );
+			
 			gamesWaiting[ gameId ] = new shared.CheckersGame();
 			
 			result.writeHead( 200, { 'Content-Type' : 'text/json' } );
