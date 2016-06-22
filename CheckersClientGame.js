@@ -93,6 +93,15 @@ function RenderBoardQuad( row, col, textureObject )
 	var rowUniformLocation = gl.getUniformLocation( boardVertexAndShaderProgram, 'row' );
 	var colUniformLocation = gl.getUniformLocation( boardVertexAndShaderProgram, 'col' );
 	
+	var rotateCheckBoxElement = document.getElementById( 'rotateCheckBox' );
+	if( rotateCheckBoxElement.checked )
+	{
+		var boardLocation = { 'row' : row, 'col' : col };
+		FlipLocation( boardLocation );
+		row = boardLocation.row;
+		col = boardLocation.col;
+	}
+	
 	gl.uniform1i( rowUniformLocation, row );
 	gl.uniform1i( colUniformLocation, col );
 	
@@ -239,6 +248,11 @@ var UpdateStatusText = function( gameState )
 	statusTextElement.innerHTML = statusText;
 }
 
+var OnRotateCheckBoxChanged = function( event )
+{
+	RenderCheckerBoard();
+}
+
 var OnCanvasClicked = function( event )
 {
 	var canvas = document.getElementById( "canvas" );
@@ -248,6 +262,10 @@ var OnCanvasClicked = function( event )
 		'row' : Math.floor( ( event.offsetY / canvas.height ) * 10.0 ),
 		'col' : Math.floor( ( event.offsetX / canvas.width ) * 10.0 )
 	};
+	
+	var rotateCheckBoxElement = document.getElementById( 'rotateCheckBox' );
+	if( rotateCheckBoxElement.checked )
+		FlipLocation( boardLocation );
 	
 	// Only allow selection of the black tiles.
 	if( ( boardLocation.row + boardLocation.col ) % 2 == 0 )

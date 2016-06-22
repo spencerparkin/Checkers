@@ -64,8 +64,13 @@
 		</p>
 		
 		<div id="buttons">
-			<input type="button" value="Clear Selection" onclick="OnClearSelection()">
-			<input type="button" value="Take Turn!" onclick="OnTakeTurn()">
+			<p>
+				<input type="button" value="Clear Selection" onclick="OnClearSelection()">
+				<input type="button" value="Take Turn!" onclick="OnTakeTurn()">
+			</p>
+			<p>
+				<input type="checkBox" id="rotateCheckBox" onchange="OnRotateCheckBoxChanged()">Rotate Board 180</input>
+			</p>
 		</div>
 		
 	</div>

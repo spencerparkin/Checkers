@@ -24,7 +24,16 @@ function OpponentOf( color )
 	
 	return '?';
 }
- 
+
+/*
+ * This is effectively a 180-degree rotation of the board.
+ */
+function FlipLocation( boardLocation )
+{
+	boardLocation.row = checkerBoardRows - 1 - boardLocation.row;
+	boardLocation.col = checkerBoardCols - 1 - boardLocation.col;
+}
+
 /*
  * A constructor for the checkers game state.
  */ 
