@@ -54,7 +54,7 @@ function LoadTexture( textureObject )
 	textureObject.image.onload = function()
 	{
 		gl.bindTexture( gl.TEXTURE_2D, textureObject.texture );
-		//gl.pixelStorei( gl.UNPACK_ALIGNMENT, 1 );
+		gl.pixelStorei( gl.UNPACK_FLIP_Y_WEBGL, 1 );
 		gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureObject.image );		// Note: For security reasons, this only works when files are being served by a web-server.  I don't understand all the details.
 		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
 		gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
