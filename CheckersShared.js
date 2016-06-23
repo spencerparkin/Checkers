@@ -88,6 +88,23 @@ CheckersGame.prototype.Winner = function()
 }
 
 /*
+ *
+ */
+CheckersGame.prototype.RowDeltaOkay = function( rowDelta, boardOccupant )
+{
+	if( boardOccupant.type === 'man' )
+	{
+		if( ( boardOccupant.color === 'red' && rowDelta > 0 ) ||
+			( boardOccupant.color === 'black' && rowDelta < 0 ) )
+		{
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+/*
  * Tell us if the occupant at the given board element can jump an adjacent piece.
  */
 CheckersGame.prototype.BoardOccupantCanStrike = function( boardElement )
@@ -102,14 +119,8 @@ CheckersGame.prototype.BoardOccupantCanStrike = function( boardElement )
 		if( rowLand < 0 || rowLand >= checkerBoardRows )
 			continue;
 		
-		if( boardOccupant.type === 'man' )
-		{
-			if( ( boardOccupant.color === 'red' && rowDelta > 0 ) ||
-				( boardOccupant.color === 'black' && rowDelta < 0 ) )
-			{
-				continue;
-			}
-		}
+		if( !this.RowDeltaOkay( rowDelta, boardOccupant ) )
+			continue;
 		
 		for( var colDelta = -2; colDelta <= 2; colDelta += 4 )
 		{
@@ -207,14 +218,8 @@ CheckersGame.prototype.TakeTurn = function( moveSequence, execute )
 			if( Math.abs( rowDelta ) === 1 && moveSequence.length > 2 )
 				throw 'Single-jump moves can only be done one turn at a time.';
 			
-			if( sourceOccupant.type === 'man' )
-			{
-				if( ( sourceOccupant.color === 'black' && rowDelta < 0 ) ||
-					( sourceOccupant.color === 'red' && rowDelta > 0 ) )
-				{
-					throw 'Only kings may retreat back into their own territory.';
-				}
-			}
+			if( !this.RowDeltaOkay( rowDelta, sourceOccupant ) )
+				throw 'Only kings may retreat back into their own territory.';
 			
 			if( Math.abs( rowDelta ) === 2 )
 			{
@@ -326,6 +331,180 @@ CheckersGame.prototype.TakeTurn = function( moveSequence, execute )
 	}
 	
 	return 'SUCCESS';
+}
+
+/*
+ * This is a greedy approach to coming up with a good move sequence.
+ */
+CheckersGame.prototype.FormulateTurn = function()
+{
+	// Go generate all possible move sequences.
+	var possibleMoveSequences = [];
+	for( var row = 0; row < checkerBoardRows; row++ )
+	{
+		for( var col = 0; col < checkerBoardCols; col++ )
+		{
+			var boardElement = this.boardMatrix[ row ][ col ];
+			this.GenerateMoveSequences( boardElement, possibleMoveSequences );
+		}
+	}
+
+	// TODO: What we really need to do is, for each possible move, try it, then
+	//       generate what moves our opponent can do, and if any one
+	//       of them is bad for us, lower the score of that move.  Or,
+	//       more generally, we need to search all possible outcomes of
+	//       the game to some number of moves ahead, then pick the move
+	//       on this turn that leads to that best possible outcome for us.
+	
+	// Determine the best score among the sequences.
+	var bestSequenceScore = 0;
+	for( var i = 0; i < possibleMoveSequences.length; i++ )
+	{
+		var sequenceScore = this.ScoreMoveSequence( possibleMoveSequences[i] );
+		if( sequenceScore > bestSequenceScore )
+			bestSequenceScore = sequenceScore;
+	}
+	
+	// Of those sequences that scored best, pick one at random.
+	var candidates = [];
+	for( var i = 0; i < possibleMoveSequences.length; i++ )
+	{
+		var sequenceScore = this.ScoreMoveSequence( possibleMoveSequences[i] );
+		if( sequenceScore === bestSequenceScore )
+			candidates.push(i);
+	}
+	
+	if( candidates.length === 0 )
+		return null;
+	
+	var i = Math.floor( Math.random() * candidates.length );
+	if( i == candidates.length )
+		i = candidates.length - 1;
+	
+	return possibleMoveSequences[ candidates[i] ];
+}
+
+/*
+ * Generate all possible moves that can be made by the board occupant, if any,
+ * at the given board element's location.
+ */
+CheckersGame.prototype.GenerateMoveSequences = function( boardElement, possibleMoveSequences )
+{
+	var boardOccupant = boardElement.occupant;
+	if( !boardOccupant || boardOccupant.color !== this.whosTurn )
+		return;
+	
+	var moveSequence = [ { 'row' : boardElement.row, 'col' : boardElement.col } ];
+	this.AccumulateMoveSequencesRecursively( moveSequence, possibleMoveSequences, boardOccupant );
+}
+
+/*
+ * This is used by the GenerateMoveSequences method.
+ */
+CheckersGame.prototype.AccumulateMoveSequencesRecursively = function( moveSequence, possibleMoveSequences, boardOccupant )
+{
+	var length = moveSequence.length;
+	if( length >= 2 )
+	{
+		var mapCallback = function( boardLocation ) { return { 'row' : boardLocation.row, 'col' : boardLocation.col }; }
+		var moveSequenceCopy = moveSequence.map( mapCallback );
+		possibleMoveSequences.push( moveSequenceCopy );
+	}
+	
+	var currentRow = moveSequence[ length - 1 ].row;
+	var currentCol = moveSequence[ length - 1 ].col;
+	
+	if( moveSequence.length === 1 )
+	{	
+		for( var rowDelta = -1; rowDelta <= 1; rowDelta += 2 )
+		{
+			var rowLand = currentRow + rowDelta;
+			if( rowLand < 0 || rowLand >= checkerBoardRows )
+				continue;
+			
+			if( !this.RowDeltaOkay( rowDelta, boardOccupant ) )
+				continue;
+			
+			for( var colDelta = -1; colDelta <= 1; colDelta += 2 )
+			{
+				var colLand = currentCol + colDelta;
+				if( colLand < 0 || colLand >= checkerBoardCols )
+					continue;
+				
+				var boardElement = this.boardMatrix[ rowLand ][ colLand ];
+				if( !boardElement.occupant )
+				{
+					moveSequence.push( { 'row' : rowLand, 'col' : colLand } );
+					this.AccumulateMoveSequencesRecursively( moveSequence, possibleMoveSequences, boardOccupant );
+					moveSequence.pop();
+				}
+			}
+		}
+	}
+	
+	if( length === 1 || Math.abs( moveSequence[ length - 1 ].row - moveSequence[ length - 2 ].row ) > 1 )
+	{
+		for( var rowDelta = -2; rowDelta <= 2; rowDelta += 4 )
+		{
+			var rowLand = currentRow + rowDelta;
+			if( rowLand < 0 || rowLand >= checkerBoardRows )
+				continue;
+			
+			if( !this.RowDeltaOkay( rowDelta, boardOccupant ) )
+				continue;
+			
+			for( var colDelta = -2; colDelta <= 2; colDelta += 4 )
+			{
+				var colLand = currentCol + colDelta;
+				if( colLand < 0 || colLand >= checkerBoardCols )
+					continue;
+				
+				var boardElement = this.boardMatrix[ rowLand ][ colLand ];
+				if( boardElement.occupant )
+					continue;
+				
+				var jumpedBoardElement = this.boardMatrix[ currentRow + rowDelta / 2 ][ currentCol + colDelta / 2 ];
+				var jumpedBoardOccupant = jumpedBoardElement.occupant;
+				if( !jumpedBoardOccupant || jumpedBoardOccupant.color !== OpponentOf( this.whosTurn ) )
+					continue;
+				
+				var locationRepeated = false;
+				var boardLocation = { 'row' : rowLand, 'col' : colLand };
+				for( var i = 0; i < length && !locationRepeated; i++ )
+					if( moveSequence[i].row === boardLocation.row && moveSequence[i].col === boardLocation.col )
+						locationRepeated = true;
+				
+				if( locationRepeated )
+					continue;
+				
+				moveSequence.push( boardLocation );
+				this.AccumulateMoveSequencesRecursively( moveSequence, possibleMoveSequences, boardOccupant );
+				moveSequence.pop();
+			}
+		}
+	}
+}
+
+/*
+ * This is how we measure a move sequence in a manner proportional to
+ * how desirable the move sequence is.
+ */
+CheckersGame.prototype.ScoreMoveSequence = function( moveSequence )
+{
+	if( moveSequence.length < 2 )
+		return 0;
+	
+	if( moveSequence.length === 2 )
+	{
+		var rowDelta = moveSequence[1].row - moveSequence[0].row;
+		return Math.abs( rowDelta );
+	}
+	
+	// TODO: It would be a good idea to deduct from the score if the move puts
+	//       the computer's piece in harms way or sets up a great move for the opponent.
+	//       That wouldn't be so easy to detect, though.
+	
+	return 2 * moveSequence.length;
 }
 
 /*

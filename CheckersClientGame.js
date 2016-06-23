@@ -402,7 +402,7 @@ var ConnectToServer = function( hostname, port )
 	return socket;
 }
 
-var socket = ConnectToServer( '127.0.0.1', 3000 );
+var socket = ConnectToServer( '127.0.0.1', 5000 );
 
 var OnTakeTurn = function()
 {

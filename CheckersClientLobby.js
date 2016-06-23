@@ -4,11 +4,8 @@
  * Here we implement the checkers lobby client-side.
  */
 
- // Note that we must return false here to prevent the default behavior of the hyper-link.
-var OnStartNewGameClicked = function( event )
+var StartNewGame = function( againstComputer )
 {
-	event.preventDefault();
-	
 	if( window.sessionStorage.newGameRequestInProgress )
 		return false;
 	
@@ -36,8 +33,21 @@ var OnStartNewGameClicked = function( event )
 		window.sessionStorage.newGameRequestInProgress = false;
 	}
 	
-	$.getJSON( 'NewGame.json', JsonRequestCallback );
-	
+	$.getJSON( 'NewGame.json', { 'againstComputer' : againstComputer }, JsonRequestCallback );
+}
+
+// Note that we must return false here to prevent the default behavior of the hyper-link.
+var OnStartNewGameClicked = function( event )
+{
+	event.preventDefault();
+	StartNewGame( false );
+	return false;
+}
+
+var OnStartNewGameAgainstComputer = function( event )
+{
+	event.preventDefault();
+	StartNewGame( true );
 	return false;
 }
 
@@ -93,7 +103,8 @@ var OnDocumentReady = function()
 		return;
 	}
 	
-	$( '#startNewGame a' ).click( OnStartNewGameClicked );
+	$( '#startNewGame' ).click( OnStartNewGameClicked );
+	$( '#startNewGameAgainstComputer' ).click( OnStartNewGameAgainstComputer );
 	$( '.joinGame a' ).click( OnJoinGameClicked );
 }
 

@@ -89,12 +89,24 @@ var ServerCallback = function( request, result )
 		else if( urlData.pathname === '/NewGame.json' )
 		{
 			var gameId = nextGameId++;
-			var jsonData = JSON.stringify( { 'gameId' : gameId, 'color' : 'black' } );
+			var jsonData = { 'gameId' : gameId, 'color' : 'black' };
 			
-			gamesWaiting[ gameId ] = new shared.CheckersGame();
+			var match = /^againstComputer=([a-zA-Z]+)/.exec( urlData.query )[1];
+			var againstComputer = ( match === 'true' );
+			
+			var gameState = new shared.CheckersGame();
+			
+			if( !againstComputer )
+				gamesWaiting[ gameId ] = gameState;
+			else
+			{
+				gamesPlaying[ gameId ] = gameState;
+				gameState.againstComputer = true;
+				jsonData.color = 'red';
+			}
 			
 			result.writeHead( 200, { 'Content-Type' : 'text/json' } );
-			result.end( jsonData );
+			result.end( JSON.stringify( jsonData ) );
 		}
 		else if( urlData.pathname === '/JoinGame.json' )
 		{
@@ -224,7 +236,7 @@ var OnSocketConnection = function( socket )
 			var opponentColor = shared.OpponentOf( socket.color );
 			var socketPair = gameSockets[ messageData.gameId ];
 			var opponentSocket = socketPair[ opponentColor ];
-			if( !opponentSocket )
+			if( !opponentSocket && !gameState.againstComputer )
 			{
 				socket.emit( 'message', { 'type' : 'error', 'reason' : 'Opponent not connected/identified.' } );
 				return;
@@ -233,20 +245,48 @@ var OnSocketConnection = function( socket )
 			result = gameState.TakeTurn( messageData.moveSequence, true );
 			if( result !== 'SUCCESS' )
 			{
-				socket.emit( 'message', { 'type' : 'error', 'reason' : 'Internal error.' } );
+				socket.emit( 'message', { 'type' : 'error', 'reason' : 'Internal error: ' + result } );
 				return;
 			}
 			
 			var messageData = { 'type' : 'execute move sequence', 'moveSequence' : messageData.moveSequence };
 			socket.emit( 'message', messageData );
-			opponentSocket.emit( 'message', messageData );
+			if( opponentSocket )
+				opponentSocket.emit( 'message', messageData );
 			
 			var winner = gameState.Winner();
 			if( winner )
 			{
 				messageData = { 'type' : 'game over', 'winner' : winner };
 				socket.emit( 'message', messageData );
-				opponentSocket.emit( 'message', messageData );
+				if( opponentSocket )
+					opponentSocket.emit( 'message', messageData );
+			}
+			else if( gameState.againstComputer )
+			{
+				var TimeoutCallback = function()
+				{
+					// Are socket emissions guarenteed to be received in order?!
+					var computerMoveSequence = gameState.FormulateTurn();
+					if( !computerMoveSequence )		// Computer admits defeat if it can't come up with a move sequence.
+						socket.emit( 'message', { 'type' : 'game over', 'winner' : socket.color } );
+					else
+					{
+						result = gameState.TakeTurn( computerMoveSequence, true );
+						if( result !== 'SUCCESS' )
+							socket.emit( 'message', { 'type' : 'error', 'reason' : 'Failed to apply computer-generated move sequence: ' + result } );
+						else
+						{
+							messageData = { 'type' : 'execute move sequence', 'moveSequence' : computerMoveSequence };
+							socket.emit( 'message', messageData );
+							winner = gameState.Winner();
+							if( winner )
+								socket.emit( 'message', { 'type' : 'game over', 'winner' : winner } );
+						}
+					}
+				}
+				
+				setTimeout( TimeoutCallback, 1000 );				
 			}
 		}
 	}
@@ -259,7 +299,7 @@ var OnSocketConnection = function( socket )
 var server = http.createServer( ServerCallback );
 
 var hostname = '127.0.0.1';
-var port = process.env.PORT || 3000;
+var port = process.env.PORT || 5000;
 
 server.listen( port ); //, hostname );
 
