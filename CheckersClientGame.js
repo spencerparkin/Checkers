@@ -255,28 +255,36 @@ var OnRotateCheckBoxChanged = function( event )
 
 var OnCanvasClicked = function( event )
 {
-	var canvas = document.getElementById( "canvas" );
-	
-	var boardLocation =
+	if( event.button === 0 )
 	{
-		'row' : Math.floor( ( event.offsetY / canvas.height ) * 10.0 ),
-		'col' : Math.floor( ( event.offsetX / canvas.width ) * 10.0 )
-	};
-	
-	var rotateCheckBoxElement = document.getElementById( 'rotateCheckBox' );
-	if( rotateCheckBoxElement.checked )
-		FlipLocation( boardLocation );
-	
-	// Only allow selection of the black tiles.
-	if( ( boardLocation.row + boardLocation.col ) % 2 == 0 )
-		return;
-	
-	if( !boardSelectionSequence )
-		boardSelectionSequence = [];
-	
-	boardSelectionSequence.push( boardLocation );
-	
-	RenderCheckerBoard();
+		if( event.ctrlKey )
+			TakeTurn();
+		else
+		{		
+			var canvas = document.getElementById( "canvas" );
+			
+			var boardLocation =
+			{
+				'row' : Math.floor( ( event.offsetY / canvas.height ) * 10.0 ),
+				'col' : Math.floor( ( event.offsetX / canvas.width ) * 10.0 )
+			};
+			
+			var rotateCheckBoxElement = document.getElementById( 'rotateCheckBox' );
+			if( rotateCheckBoxElement.checked )
+				FlipLocation( boardLocation );
+			
+			// Only allow selection of the black tiles.
+			if( ( boardLocation.row + boardLocation.col ) % 2 == 0 )
+				return;
+			
+			if( !boardSelectionSequence )
+				boardSelectionSequence = [];
+			
+			boardSelectionSequence.push( boardLocation );
+			
+			RenderCheckerBoard();
+		}
+	}
 }
 
 var OnClearSelection = function()
@@ -404,7 +412,7 @@ var ConnectToServer = function( hostname, port )
 
 var socket = ConnectToServer( '127.0.0.1', 5000 );
 
-var OnTakeTurn = function()
+var TakeTurn = function()
 {
 	if( !boardSelectionSequence )
 		alert( 'You need to select 2 or more board locations first.' );
@@ -412,5 +420,10 @@ var OnTakeTurn = function()
 	{
 		var gameId = window.sessionStorage.gameId;
 		socket.emit( 'message', { 'type' : 'take turn', 'moveSequence' : boardSelectionSequence, 'gameId' : gameId } );
-	}	
+	}
+}
+
+var OnTakeTurn = function()
+{
+	TakeTurn();	
 }
