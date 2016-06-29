@@ -376,16 +376,22 @@ CheckersGame.prototype.FormulateTurn = function()
 	
 	var OutcomeCallback = function( decisionPath, gameStateCopy )
 	{
-		var goodCaptureCount = gameStateCopy.captures[ self.whosTurn ] - self.captures[ self.whosTurn ];
-		var badCaptureCount = gameStateCopy.captures[ opponentColor ] - self.captures[ opponentColor ];
+		if( decisionPath.length == 0 )
+			return;
 		
-		if( badCaptureCount > 0 )
+		var decisionScore = 0;
+		
+		var winner = gameStateCopy.Winner();
+		if( winner === self.whosTurn )
+			decisionScore = 1000;
+		else if( winner === opponentColor )
+			decisionScore = -1000;
+		else
 		{
-			badCaptureCount += 2;
-			badCaptureCount -= 2;
+			var goodCaptureCount = gameStateCopy.captures[ self.whosTurn ] - self.captures[ self.whosTurn ];
+			var badCaptureCount = gameStateCopy.captures[ opponentColor ] - self.captures[ opponentColor ];
+			decisionScore = goodCaptureCount - badCaptureCount;
 		}
-		
-		var decisionScore = goodCaptureCount - badCaptureCount;
 		
 		var i = decisionPath[0];
 		
@@ -425,7 +431,7 @@ CheckersGame.prototype.FormulateTurn = function()
  */
 CheckersGame.prototype.ExploreOutcomes = function( decisionPath, maxDecisionPathLength, OutcomeCallback )
 {
-	if( decisionPath.length === maxDecisionPathLength )
+	if( decisionPath.length === maxDecisionPathLength || this.Winner() !== null )
 		OutcomeCallback( decisionPath, this );
 	else
 	{	
