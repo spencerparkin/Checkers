@@ -9,7 +9,36 @@
 var checkerBoardRows = 10;
 var checkerBoardCols = 10;
  
-// TODO: Provide an option to play against the computer?
+/*
+ * Make a deep copy of the given object.
+ */
+function CopyObject( object )
+{
+	if( object === undefined || object === null )
+		return object;
+	
+	var objectType = typeof( object );
+	
+	if( objectType === 'object' )
+	{
+		var objectCopy = Object.create( Object.getPrototypeOf( object ) );
+		
+		for( var property in object )
+		{
+			if( !object.hasOwnProperty( property ) )
+				continue;
+			
+			if( typeof( object[ property ] ) === 'function' )
+				continue;
+			
+			objectCopy[ property ] = CopyObject( object[ property ] );
+		}
+		
+		return objectCopy;
+	}
+	
+	return object;
+}
  
 /*
  * Determine the given player's opponent.
@@ -88,7 +117,7 @@ CheckersGame.prototype.Winner = function()
 }
 
 /*
- *
+ * Tell us if the given occupant can go in the given direction.
  */
 CheckersGame.prototype.RowDeltaOkay = function( rowDelta, boardOccupant )
 {
@@ -268,6 +297,7 @@ CheckersGame.prototype.TakeTurn = function( moveSequence, execute )
 		
 		if( jumpedLocationSequence.length == 0 )
 		{
+			/* I'm going to ignore this rule for now.
 			for( var row = 0; row < checkerBoardRows; row++ )
 			{
 				for( var col = 0; col < checkerBoardCols; col++ )
@@ -288,6 +318,7 @@ CheckersGame.prototype.TakeTurn = function( moveSequence, execute )
 					}
 				}
 			}
+			*/
 		}
 		
 		var targetBoardLocation = moveSequence[ moveSequence.length - 1 ];
@@ -334,72 +365,114 @@ CheckersGame.prototype.TakeTurn = function( moveSequence, execute )
 }
 
 /*
- * This is a greedy approach to coming up with a good move sequence.
+ * This is the entry-point for the computer's attempt at coming up with a good move.
  */
 CheckersGame.prototype.FormulateTurn = function()
 {
-	// Go generate all possible move sequences.
+	var opponentColor = OpponentOf( this.whosTurn );
+	var self = this;
+	
+	var decisionScoreMap = {};
+	
+	var OutcomeCallback = function( decisionPath, gameStateCopy )
+	{
+		var goodCaptureCount = gameStateCopy.captures[ self.whosTurn ] - self.captures[ self.whosTurn ];
+		var badCaptureCount = gameStateCopy.captures[ opponentColor ] - self.captures[ opponentColor ];
+		
+		if( badCaptureCount > 0 )
+		{
+			badCaptureCount += 2;
+			badCaptureCount -= 2;
+		}
+		
+		var decisionScore = goodCaptureCount - badCaptureCount;
+		
+		var i = decisionPath[0];
+		
+		if( !decisionScoreMap[i] )
+			decisionScoreMap[i] = 0;
+		
+		decisionScoreMap[ decisionPath[0] ] += decisionScore;
+	}
+	
+	var maxDecisionPathLength = 3;
+	var decisionPath = [];
+	
+	try
+	{
+		this.ExploreOutcomes( decisionPath, maxDecisionPathLength, OutcomeCallback );
+	}
+	catch( error )
+	{
+		return null;
+	}
+	
+	var bestImmediateDecision = -1;
+	for( var i in decisionScoreMap )
+		if( bestImmediateDecision == -1 || decisionScoreMap[ bestImmediateDecision ] < decisionScoreMap[i] )
+			bestImmediateDecision = i;
+	
+	if( bestImmediateDecision === -1 )
+		return null;
+	
+	var possibleMoveSequences = this.GenerateAllPossibleMoveSequences();
+	
+	return possibleMoveSequences[ bestImmediateDecision ];
+}
+
+/*
+ * Recursively explore all possible outcomes of the game to a given depth.
+ */
+CheckersGame.prototype.ExploreOutcomes = function( decisionPath, maxDecisionPathLength, OutcomeCallback )
+{
+	if( decisionPath.length === maxDecisionPathLength )
+		OutcomeCallback( decisionPath, this );
+	else
+	{	
+		var possibleMoveSequences = this.GenerateAllPossibleMoveSequences();
+		
+		for( var i = 0; i < possibleMoveSequences.length; i++ )
+		{
+			var gameStateCopy = CopyObject( this );
+		
+			var result = gameStateCopy.TakeTurn( possibleMoveSequences[i], true );
+			if( result !== 'SUCCESS' )
+				throw 'Internal error!';
+			
+			decisionPath.push(i);
+			gameStateCopy.ExploreOutcomes( decisionPath, maxDecisionPathLength, OutcomeCallback );
+			decisionPath.pop();
+		}
+	}
+}
+
+/*
+ * Generate all possible move sequences of the game in its current state for player who's turn it currently is.
+ */
+CheckersGame.prototype.GenerateAllPossibleMoveSequences = function()
+{
 	var possibleMoveSequences = [];
+	
 	for( var row = 0; row < checkerBoardRows; row++ )
 	{
 		for( var col = 0; col < checkerBoardCols; col++ )
 		{
 			var boardElement = this.boardMatrix[ row ][ col ];
-			this.GenerateMoveSequences( boardElement, possibleMoveSequences );
+			
+			var boardOccupant = boardElement.occupant;
+			if( !boardOccupant || boardOccupant.color !== this.whosTurn )
+				continue;
+			
+			var moveSequence = [ { 'row' : boardElement.row, 'col' : boardElement.col } ];
+			this.AccumulateMoveSequencesRecursively( moveSequence, possibleMoveSequences, boardOccupant );
 		}
 	}
-
-	// TODO: What we really need to do is, for each possible move, try it, then
-	//       generate what moves our opponent can do, and if any one
-	//       of them is bad for us, lower the score of that move.  Or,
-	//       more generally, we need to search all possible outcomes of
-	//       the game to some number of moves ahead, then pick the move
-	//       on this turn that leads to that best possible outcome for us.
 	
-	// Determine the best score among the sequences.
-	var bestSequenceScore = 0;
-	for( var i = 0; i < possibleMoveSequences.length; i++ )
-	{
-		var sequenceScore = this.ScoreMoveSequence( possibleMoveSequences[i] );
-		if( sequenceScore > bestSequenceScore )
-			bestSequenceScore = sequenceScore;
-	}
-	
-	// Of those sequences that scored best, pick one at random.
-	var candidates = [];
-	for( var i = 0; i < possibleMoveSequences.length; i++ )
-	{
-		var sequenceScore = this.ScoreMoveSequence( possibleMoveSequences[i] );
-		if( sequenceScore === bestSequenceScore )
-			candidates.push(i);
-	}
-	
-	if( candidates.length === 0 )
-		return null;
-	
-	var i = Math.floor( Math.random() * candidates.length );
-	if( i == candidates.length )
-		i = candidates.length - 1;
-	
-	return possibleMoveSequences[ candidates[i] ];
+	return possibleMoveSequences;
 }
 
 /*
- * Generate all possible moves that can be made by the board occupant, if any,
- * at the given board element's location.
- */
-CheckersGame.prototype.GenerateMoveSequences = function( boardElement, possibleMoveSequences )
-{
-	var boardOccupant = boardElement.occupant;
-	if( !boardOccupant || boardOccupant.color !== this.whosTurn )
-		return;
-	
-	var moveSequence = [ { 'row' : boardElement.row, 'col' : boardElement.col } ];
-	this.AccumulateMoveSequencesRecursively( moveSequence, possibleMoveSequences, boardOccupant );
-}
-
-/*
- * This is used by the GenerateMoveSequences method.
+ * This is used exclusively by the 'GenerateAllPossibleMoveSequences' method.
  */
 CheckersGame.prototype.AccumulateMoveSequencesRecursively = function( moveSequence, possibleMoveSequences, boardOccupant )
 {
@@ -483,28 +556,6 @@ CheckersGame.prototype.AccumulateMoveSequencesRecursively = function( moveSequen
 			}
 		}
 	}
-}
-
-/*
- * This is how we measure a move sequence in a manner proportional to
- * how desirable the move sequence is.
- */
-CheckersGame.prototype.ScoreMoveSequence = function( moveSequence )
-{
-	if( moveSequence.length < 2 )
-		return 0;
-	
-	if( moveSequence.length === 2 )
-	{
-		var rowDelta = moveSequence[1].row - moveSequence[0].row;
-		return Math.abs( rowDelta );
-	}
-	
-	// TODO: It would be a good idea to deduct from the score if the move puts
-	//       the computer's piece in harms way or sets up a great move for the opponent.
-	//       That wouldn't be so easy to detect, though.
-	
-	return 2 * moveSequence.length;
 }
 
 /*
