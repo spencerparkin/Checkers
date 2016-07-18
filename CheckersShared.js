@@ -380,6 +380,7 @@ CheckersGame.prototype.FormulateTurn = function()
 		if( decisionPath.length == 0 )
 			return;
 		
+		// BUG: No, there is still something wrong with this.
 		var goodCaptureCount = gameStateCopy.captures[ self.whosTurn ] - self.captures[ self.whosTurn ];
 		var badCaptureCount = gameStateCopy.captures[ opponentColor ] - self.captures[ opponentColor ];
 		var decisionScore = ( goodCaptureCount - badCaptureCount ) * 100 + ( maxDecisionPathLength - decisionPath.length );
