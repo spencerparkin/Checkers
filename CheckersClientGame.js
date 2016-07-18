@@ -6,6 +6,8 @@
 
 var gl = null;
 
+// TODO: After finishing a game (win or lose), you cannot start another.  Where's the bug?
+
 function LoadShader( shaderSource, shaderType )
 {
 	var shader = gl.createShader( shaderType );
