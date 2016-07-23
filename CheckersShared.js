@@ -372,28 +372,37 @@ CheckersGame.prototype.FormulateTurn = function()
 	var opponentColor = OpponentOf( this.whosTurn );
 	var self = this;
 	
-	var maxDecisionPathLength = 4;
-	var decisionScoreMap = {};
+	var currentRatio = ( 20.0 - this.captures[ self.whosTurn ] ) / ( 20.0 - this.captures[ opponentColor ] );
+	
+	var outcomeMap = {};
+	var winningDecision = -1;
 	
 	var OutcomeCallback = function( decisionPath, gameStateCopy )
 	{
 		if( decisionPath.length == 0 )
 			return;
 		
-		// BUG: No, there is still something wrong with this.
-		var goodCaptureCount = gameStateCopy.captures[ self.whosTurn ] - self.captures[ self.whosTurn ];
-		var badCaptureCount = gameStateCopy.captures[ opponentColor ] - self.captures[ opponentColor ];
-		var decisionScore = ( goodCaptureCount - badCaptureCount ) * 100 + ( maxDecisionPathLength - decisionPath.length );
-		
 		var i = decisionPath[0];
 		
-		if( !decisionScoreMap[i] )
-			decisionScoreMap[i] = 0;
+		if( gameStateCopy.captures[ opponentColor ] === 20 )
+			winningDecision = i;
+		else
+		{
+			var ratio = ( 20.0 - gameStateCopy.captures[ self.whosTurn ] ) / ( 20.0 - gameStateCopy.captures[ opponentColor ] );
 		
-		if( decisionScoreMap[i] < decisionScore )		
-			decisionScoreMap[i] = decisionScore;
+			if( !outcomeMap[i] )
+				outcomeMap[i] = { 'positiveOutcomeCount' : 0, 'negativeOutcomeCount' : 0 };
+		
+			var outcomeStats = outcomeMap[i];
+		
+			if( ratio > currentRatio )
+				outcomeStats.positiveOutcomeCount++;
+			else if( ratio < currentRatio )
+				outcomeStats.negativeOutcomeCount++;
+		}
 	}
 	
+	var maxDecisionPathLength = 4;
 	var decisionPath = [];
 	
 	try
@@ -405,10 +414,23 @@ CheckersGame.prototype.FormulateTurn = function()
 		return null;
 	}
 	
-	var bestImmediateDecision = -1;
-	for( var i in decisionScoreMap )
-		if( bestImmediateDecision == -1 || decisionScoreMap[ bestImmediateDecision ] < decisionScoreMap[i] )
-			bestImmediateDecision = i;
+	var bestImmediateDecision = winningDecision;
+	if( bestImmediateDecision === -1 )
+	{
+		for( var i in outcomeMap )
+		{
+			if( bestImmediateDecision === -1 )
+				bestImmediateDecision = i;
+			else
+			{
+				var bestOutcomeStats = outcomeMap[ bestImmediateDecision ];
+				var outcomeStats = outcomeMap[i];
+				
+				if( outcomeStats.positiveOutcomeCount > bestOutcomeStats.positiveOutcomeCount )
+					bestImmediateDecision = i;
+			}
+		}
+	}
 	
 	if( bestImmediateDecision === -1 )
 		return null;
