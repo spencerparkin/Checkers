@@ -17,6 +17,9 @@ var shared = require( './CheckersShared' );
 jsdom.defaultDocumentFeatures.FetchExternalResources = false;
 jsdom.defaultDocumentFeatures.ProcessExternalResources = false;
 
+// I realize now that instead of storing the games here, I should
+// have stored them in a Mongo database.  This way, even if the server
+// shutdown temporarily, a game could still be resumed.
 var nextGameId = 1;
 var gamesWaiting = {};
 var gamesPlaying = {};
